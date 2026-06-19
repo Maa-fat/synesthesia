@@ -1,4 +1,4 @@
-const CACHE_NAME = "memo-app";
+const CACHE_NAME = "app-v2";
 const urlsToCache = [
   "./",
   "./index.html"
