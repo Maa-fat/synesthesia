@@ -812,6 +812,11 @@ function resetForm(){
   clearCanvas();
 
   editIndex = null; 
+
+
+ localStorage.removeItem("current");
+
+
 }
 
 /* ===== 初期化 ===== */
@@ -961,6 +966,13 @@ function showFiles(){
 }
 
 function showMemo(){
+
+  let i = localStorage.getItem("current");
+
+  if(i === null){
+    current = null; // ←これ追加（念のため）
+  }
+
   filePage.style.display="none";
   memoPage.style.display="block";
   settingsPage.style.display="none";
@@ -973,34 +985,40 @@ function showMemo(){
 
 function saveWord(){
 
-
-if(!word.value.trim()){
-  alert("単語を入力して");
-  return;
-}
+  if(!word.value.trim()){
+    alert("単語を入力して");
+    return;
+  }
 
   let i = localStorage.getItem("current");
   let files = JSON.parse(localStorage.getItem("files") || "[]");
 
-
-  // ✅ 追加（これ超重要）
-  if(i === null){
-    alert("先にファイルを選択または作成してください");
-    return;
+  // ✅ 数値に変換
+  if(i !== null){
+    i = parseInt(i);
   }
 
-  if(!files[i]){
-    alert("ファイルが存在しません");
-    return;
+  // ✅ ファイル未選択 or 無効なら自動作成
+  if(i === null || !files[i]){
+
+    let name = "新規ファイル " + (files.length + 1);
+
+    i = files.length;
+
+    files.push({
+      name: name,
+      memos: []
+    });
+
+    localStorage.setItem("files", JSON.stringify(files));
+    localStorage.setItem("current", i);
   }
 
-if(!files[i].memos){
-  files[i].memos = [];
-}
 
-
-
-  if(!files[i]) return;
+  // ✅ 念のため初期化
+  if(!files[i].memos){
+    files[i].memos = [];
+  }
 
   let image = canvas.toDataURL();
 
@@ -1011,37 +1029,39 @@ if(!files[i].memos){
   }
 
 
-
   if(editIndex !== null){
+
     files[i].memos[editIndex] = {
       word: word.value,
       detail: detail.value,
       image: image,
       color: selectedColor
     };
+
     editIndex = null;
 
   }else{
+
     files[i].memos.push({
       word: word.value,
       detail: detail.value,
       image: image,
       color: selectedColor
     });
+
   }
 
-  //  保存
+  // ✅ 保存
   localStorage.setItem("files", JSON.stringify(files));
 
-  //  UIリセット
-  word.value="";
-  detail.value="";
+  // ✅ リセット
+  word.value = "";
+  detail.value = "";
   document.getElementById("color").value = "#000000";
   colorTouched = false;
 
   clearCanvas();
 
-  //  表示更新
   renderWords();
 }
 
@@ -1182,6 +1202,8 @@ function renderWords(){
 
 /* ===== 新規ファイル ===== */
 function newMemo(){
+
+  localStorage.removeItem("current");
 
   let files = JSON.parse(localStorage.getItem("files") || "[]");
 
