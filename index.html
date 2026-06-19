@@ -153,6 +153,25 @@ input[type="color"] {
   cursor:pointer;
 }
 
+
+#settingsList {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+#settingsList div {
+  background: white;
+  padding: 8px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.dark #settingsList div {
+  background: #2c2c2e;
+}
+
+
 /* スマホ */
 @media (max-width:600px){
 
@@ -292,6 +311,13 @@ html, body {
   border:1px solid #666;
 }
 
+.settingsTopButtons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
 </style>
 
 </head>
@@ -322,14 +348,23 @@ html, body {
 </div>
 
 <div id="settingsPage" style="display:none">
-  
+
+
+<div class="settingsTopButtons">
   <button onclick="showFiles()">←戻る</button>
+  <button onclick="saveSettings()">保存</button>
+</div>
 
   <h3>文字色設定</h3>
+
+  <input id="addChar" placeholder="追加する文字">
+  <button onclick="addChar()">追加</button>
 
   <div id="settingsList"></div>
 
   <button onclick="saveSettings()">保存</button>
+
+
 </div>
 
 <!-- ファイル -->
@@ -378,6 +413,15 @@ html, body {
     <b>■<i class="fa-solid fa-palette"></i> 自動カラー</b><br>
     ・設定で文字ごとに色を設定できます<br>
     ・色を選ばなければ自動で色が付きます<br><br>
+
+    <b>■<i class="fa-solid fa-gear"></i> カスタム文字追加</b><br>
+    ・カタカナや漢字などを自分で追加できます<br>
+    ・入力欄に文字を入れて「追加」を押すと設定に表示されます<br>
+    ・追加した文字も他の文字と同じように色を設定できます<br><br>
+
+    <b>■<i class="fa-solid fa-palette"></i> 文字色一覧（グリッド表示）</b><br>
+    ・文字色設定は複数列で表示されます<br>
+    ・一覧からすばやく色を変更できます<br><br>
 
     <b>■<i class="fa-solid fa-pen-to-square"></i> 編集</b><br>
     ・<i class="fa-solid fa-pen-to-square"></i>ボタンで編集できます<br>
@@ -434,18 +478,21 @@ let currentMemos = [];
 function showSettings(){
   filePage.style.display = "none";
   memoPage.style.display = "none";
+  helpPage.style.display = "none";
   settingsPage.style.display = "block";
  
   generateSettings(); 
 
 }
 
+
 function generateSettings(){
 
   let container = document.getElementById("settingsList");
   container.innerHTML = "";
 
-  let chars = [
+  // ✅ 固定文字
+  let baseChars = [
     ..."あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん",
     ..."がぎぐげござじずぜぞだぢづでどばびぶべぼ",
     ..."ぱぴぷぺぽ",
@@ -453,6 +500,14 @@ function generateSettings(){
     ..."abcdefghijklmnopqrstuvwxyz",
     ..."0123456789"
   ];
+
+
+
+  // ✅ 追加文字
+  let customChars = JSON.parse(localStorage.getItem("customChars") || "[]");
+
+  // ✅ 合体
+  let chars = [...baseChars, ...customChars];
 
   let settings = JSON.parse(localStorage.getItem("settings") || "{}");
 
@@ -472,15 +527,8 @@ function generateSettings(){
     input.oninput = () => {
       preview.style.background = input.value;
       saveSettingsAuto();
-
-      // プチアニメ
-      preview.style.transform = "scale(1.2)";
-      setTimeout(()=>{
-        preview.style.transform = "scale(1)";
-      },100);
     };
 
-    // ID設定（保存用）
     input.id = "color_" + c;
 
     container.appendChild(div);
@@ -588,7 +636,31 @@ function getSmartBackground(word, customColor){
 }
 
 
+function addChar(){
 
+  let input = document.getElementById("addChar");
+  let value = input.value.trim();
+
+  if(!value){
+    alert("入力して");
+    return;
+  }
+
+  let customChars = JSON.parse(localStorage.getItem("customChars") || "[]");
+
+  // 重複防止
+  for(let c of value){
+    if(!customChars.includes(c)){
+      customChars.push(c);
+    }
+  }
+
+  localStorage.setItem("customChars", JSON.stringify(customChars));
+
+  input.value = "";
+
+  generateSettings(); // 再描画
+}
 
 
 function saveSettings(){
@@ -1325,6 +1397,12 @@ if ("serviceWorker" in navigator) {
 
     ・⬆⬇ボタンで順番変更<br>
     ・ドラッグでも並び替え可能<br><br>
+
+
+    ・設定画面で文字ごとの色を設定できます<br>
+    ・カタカナや漢字などの文字も自分で追加できます<br>
+    ・追加した文字も色を設定できます<br><br>
+
 
     <button onclick="closeTutorial()">OK</button>
 
