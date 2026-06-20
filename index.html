@@ -805,81 +805,13 @@ function resetForm(){
   word.value = "";
   detail.value = "";
 
-
   document.getElementById("color").value = "#000000";
   colorTouched = false;
 
   clearCanvas();
 
-  editIndex = null; 
-
-
- localStorage.removeItem("current");
-
-
+  editIndex = null;
 }
-
-/* ===== 初期化 ===== */
-
-window.onload = function(){
-
-  canvas = document.getElementById("canvas");
-  ctx = canvas.getContext("2d");
-
-  canvas.width = document.body.clientWidth * 0.9;
-  canvas.height = 150;
-
-
-  canvas.onmousedown = ()=>{
-    drawing = true;
-    ctx.beginPath();
-  };
-
-  canvas.onmouseup = ()=> drawing = false;
-
-  canvas.onmousemove = (e)=>{
-    if(!drawing) return;
-    ctx.lineTo(e.offsetX, e.offsetY);
-    ctx.stroke();
-  };
-
-  document.getElementById("color").oninput = ()=>{
-    colorTouched = true;
-  };
-
-  renderFiles();
-
-
-  // ダークモードここ！
-  let dark = localStorage.getItem("darkMode");
-
-  if(dark === "on"){
-    document.body.classList.add("dark");
-  }
-
-
-
-  // 必ずここに入れる
-  let first = localStorage.getItem("firstLaunch");
-
-  if(!first){
-    showHelp();
-    localStorage.setItem("firstLaunch", "true");
-  }
-
-
-  let seen = localStorage.getItem("tutorial");
-
-  if(!seen){
-    let t = document.getElementById("tutorial");
-    if(t){
-      t.style.display = "flex";
-    }
-  }
-
-
-}; 
-
 
 
 
@@ -959,6 +891,9 @@ function showHelp(){
 }
 
 function showFiles(){
+
+  renderFiles();
+
   filePage.style.display="block";
   memoPage.style.display="none";
   settingsPage.style.display="none";
@@ -970,7 +905,9 @@ function showMemo(){
   let i = localStorage.getItem("current");
 
   if(i === null){
-    current = null; // ←これ追加（念のため）
+    alert("ファイルを選択してください");
+    showFiles();
+    return;
   }
 
   filePage.style.display="none";
@@ -980,6 +917,7 @@ function showMemo(){
 
   renderWords();
 }
+
 
 /* ===== 保存 ===== */
 
@@ -993,15 +931,13 @@ function saveWord(){
   let i = localStorage.getItem("current");
   let files = JSON.parse(localStorage.getItem("files") || "[]");
 
-  // ✅ 数値に変換
-  if(i !== null){
-    i = parseInt(i);
-  }
+  if(i === null){
 
-  // ✅ ファイル未選択 or 無効なら自動作成
-  if(i === null || !files[i]){
+    let ok = confirm("ファイルがありません。新規作成しますか？");
 
-    let name = "新規ファイル " + (files.length + 1);
+    if(!ok) return;
+
+    let name = "新規ファイル";
 
     i = files.length;
 
@@ -1014,13 +950,13 @@ function saveWord(){
     localStorage.setItem("current", i);
   }
 
+  i = parseInt(i);
 
-  // ✅ 念のため初期化
-  if(!files[i].memos){
-    files[i].memos = [];
+  let image = null;
+
+  if(canvas){
+    image = canvas.toDataURL();
   }
-
-  let image = canvas.toDataURL();
 
   let selectedColor = null;
 
@@ -1028,9 +964,10 @@ function saveWord(){
     selectedColor = document.getElementById("color").value;
   }
 
-
+  // ✅ここが超重要（編集と新規の分岐）
   if(editIndex !== null){
 
+    // ✅編集（上書き）
     files[i].memos[editIndex] = {
       word: word.value,
       detail: detail.value,
@@ -1042,6 +979,7 @@ function saveWord(){
 
   }else{
 
+    // ✅新規追加
     files[i].memos.push({
       word: word.value,
       detail: detail.value,
@@ -1051,10 +989,9 @@ function saveWord(){
 
   }
 
-  // ✅ 保存
   localStorage.setItem("files", JSON.stringify(files));
 
-  // ✅ リセット
+  // ✅入力リセット
   word.value = "";
   detail.value = "";
   document.getElementById("color").value = "#000000";
@@ -1073,7 +1010,15 @@ function renderWords(){
   let i = localStorage.getItem("current");
   let files = JSON.parse(localStorage.getItem("files") || "[]");
 
-  if(i === null || !files[i]) return;
+
+  if(i === null) return;
+
+  // ✅ ここ追加
+  i = parseInt(i);
+
+  if(!files[i]) return;
+
+
 
   let list = document.getElementById("list");
   list.innerHTML = "";
@@ -1201,37 +1146,29 @@ function renderWords(){
 }
 
 /* ===== 新規ファイル ===== */
+
 function newMemo(){
 
-  localStorage.removeItem("current");
-
-  let files = JSON.parse(localStorage.getItem("files") || "[]");
-
-
-  if(files.length > 0 && localStorage.getItem("current") !== null){
-    showMemo();
-    return;
-  }
-
-
-  let name = prompt("ファイル名を入力してください");
+  let name = prompt("ファイル名を入力");
 
   if(!name) return;
+
+  let files = JSON.parse(localStorage.getItem("files") || "[]");
 
   let i = files.length;
 
   files.push({
     name: name,
-    memos:[]
+    memos: []
   });
 
   localStorage.setItem("files", JSON.stringify(files));
   localStorage.setItem("current", i);
-  showMemo();
 
-  renderFiles();  
+  renderFiles();
   showMemo();
 }
+ 
 
 
   // 色も反映
@@ -1347,6 +1284,18 @@ function closeModal(){
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js");
 }
+
+
+window.onload = function(){
+  renderFiles();
+
+
+  // ✅ これ追加！！！
+  canvas = document.getElementById("canvas");
+  ctx = canvas.getContext("2d");
+
+}
+
 
 </script>
 
